@@ -39,15 +39,7 @@ body.cursor-hover #c-ring{width:56px;height:56px;border-color:var(--bronze);}
 #spots-bar{position:fixed;top:0;left:0;width:100%;background:linear-gradient(90deg,var(--bronze-d),var(--bronze),var(--bronze-d));color:var(--void);font-family:'IBM Plex Mono',monospace;font-size:11px;font-weight:400;text-align:center;padding:7px 20px;z-index:9989;letter-spacing:.12em;cursor:pointer;}
 #spots-bar span{opacity:.75;margin:0 12px;}
 
-/* ── VELOCITY ── */
-#vel-line{position:fixed;right:24px;top:50%;transform:translateY(-50%);width:1px;height:80px;background:rgba(196,154,60,.15);z-index:9985;}
-#vel-fill{width:100%;background:var(--bronze);transition:height .3s ease;height:0%;}
-#vel-label{position:absolute;right:8px;top:50%;transform:translateY(-50%);font-family:'IBM Plex Mono',monospace;font-size:9px;color:var(--bronze);writing-mode:vertical-rl;letter-spacing:.1em;opacity:.5;}
 
-/* ── CHAPTER OVERLAY ── */
-#ch-overlay{position:fixed;left:50%;top:50%;transform:translate(-50%,-50%);z-index:9980;pointer-events:none;opacity:0;transition:opacity .5s;}
-#ch-overlay.show{opacity:1;}
-.ch-card{text-align:center;font-family:'IBM Plex Mono',monospace;font-size:10px;color:var(--bronze);letter-spacing:.2em;text-transform:uppercase;border:1px solid rgba(196,154,60,.3);padding:12px 28px;background:rgba(5,4,7,.85);backdrop-filter:blur(10px);}
 
 /* ── NAV ── */
 #nav{position:fixed;top:40px;left:0;width:100%;z-index:9960;transition:transform .4s,background .4s,top .4s,padding .4s;padding:0 48px;}
@@ -110,10 +102,10 @@ body.cursor-hover #c-ring{width:56px;height:56px;border-color:var(--bronze);}
 @keyframes marquee{0%{transform:translateX(0);}100%{transform:translateX(-50%);}}
 
 /* ── DOCTRINE ── */
-#doctrine{position:relative;height:400vh;z-index:10;}
-.doc-pin{position:sticky;top:0;height:100vh;display:flex;align-items:center;justify-content:center;overflow:hidden;background:var(--void3);}
-.doc-bg-n{position:absolute;font-family:'Cormorant',serif;font-weight:700;font-size:clamp(200px,35vw,480px);color:rgba(196,154,60,.025);user-select:none;pointer-events:none;line-height:1;letter-spacing:-.05em;}
-.doc-panel{position:absolute;text-align:center;opacity:0;will-change:transform,opacity;padding:0 40px;max-width:900px;}
+#doctrine{position:relative;z-index:10;}
+.doc-pin{position:relative;display:flex;align-items:center;justify-content:center;min-height:100vh;background:var(--void3);overflow:hidden;}
+.doc-bg-n{position:absolute;font-family:'Cormorant',serif;font-weight:700;font-size:clamp(200px,35vw,480px);color:rgba(196,154,60,.025);user-select:none;pointer-events:none;line-height:1;letter-spacing:-.05em;z-index:1;}
+.doc-panel{position:relative;text-align:center;padding:0 40px;max-width:900px;z-index:2;}
 .doc-num{display:block;font-family:'IBM Plex Mono',monospace;font-size:11px;letter-spacing:.3em;color:var(--bronze);margin-bottom:32px;}
 .doc-panel h2{font-family:'Cormorant',serif;font-weight:700;font-size:clamp(52px,8.5vw,128px);line-height:1.0;color:var(--parchment);letter-spacing:-.02em;}
 .doc-panel h2 em{font-style:italic;color:var(--bronze);}
@@ -313,14 +305,6 @@ body.cursor-hover #c-ring{width:56px;height:56px;border-color:var(--bronze);}
   Claim yours →
 </div>
 
-<div id="vel-line">
-  <div id="vel-fill"></div>
-  <div id="vel-label">VEL</div>
-</div>
-
-<div id="ch-overlay">
-  <div class="ch-card" id="ch-card-text">I — THE THRESHOLD</div>
-</div>
 
 <nav id="nav">
   <div class="nav-inner">
@@ -393,23 +377,32 @@ body.cursor-hover #c-ring{width:56px;height:56px;border-color:var(--bronze);}
 
 <section id="doctrine">
   <div class="doc-pin">
-    <div class="doc-bg-n" id="doc-bg-n">I</div>
-    <div class="doc-panel" id="dp1">
+    <div class="doc-bg-n">01</div>
+    <div class="doc-panel rv">
       <span class="doc-num">01</span>
       <h2>Strategy without<br>execution is <em>fantasy.</em></h2>
       <div class="doc-divider"></div>
     </div>
-    <div class="doc-panel" id="dp2">
+  </div>
+  <div class="doc-pin">
+    <div class="doc-bg-n">02</div>
+    <div class="doc-panel rv">
       <span class="doc-num">02</span>
       <h2>Design without<br>conversion is <em>decoration.</em></h2>
       <div class="doc-divider"></div>
     </div>
-    <div class="doc-panel" id="dp3">
+  </div>
+  <div class="doc-pin">
+    <div class="doc-bg-n">03</div>
+    <div class="doc-panel rv">
       <span class="doc-num">03</span>
       <h2>Technology without<br>craft is <em>noise.</em></h2>
       <div class="doc-divider"></div>
     </div>
-    <div class="doc-panel" id="dp4">
+  </div>
+  <div class="doc-pin">
+    <div class="doc-bg-n">04</div>
+    <div class="doc-panel rv">
       <span class="doc-num">04</span>
       <h2><em>AEVRIX</em> is all three.<br>Mastered.</h2>
       <div class="doc-divider"></div>
@@ -1192,11 +1185,9 @@ function initPage(){
   initAurora();
   initSacred();
   initProgress();
-  initVelocity();
   initNav();
   initHeroEntrance();
   initParallax();
-  initDoctrine();
   initServiceDrag();
   initGalleryDrag();
   initScrollReveals();
@@ -1205,7 +1196,6 @@ function initPage(){
   initSlblReveals();
   initFAQ();
   initChat();
-  initChapters();
 }
 
 // ── BOOT ───────────────────────────────────────────────────
