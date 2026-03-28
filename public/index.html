@@ -1172,14 +1172,10 @@ function initLenis(){
     touchMultiplier: 1.8,
     infinite: false,
   });
-  lenis.on('scroll', ScrollTrigger.update);
-  function raf(time){ lenis.raf(time); requestAnimationFrame(raf); }
-  requestAnimationFrame(raf);
-  // Pause lenis during scroll-jacks
-  ScrollTrigger.scrollerProxy(document.documentElement, {
-    scrollTop(value){ if(arguments.length){ lenis.scrollTo(value,{immediate:true}); } return lenis.scroll; },
-    getBoundingClientRect(){ return {top:0,left:0,width:window.innerWidth,height:window.innerHeight}; }
-  });
+  // Drive Lenis via GSAP ticker so ScrollTrigger stays in sync
+  gsap.ticker.add((time) => { lenis.raf(time * 1000); });
+  gsap.ticker.lagSmoothing(0);
+  lenis.on('scroll', () => { ScrollTrigger.update(); });
 }
 
 /* ══════════════════════════════════════════════════════
