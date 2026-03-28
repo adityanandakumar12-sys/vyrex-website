@@ -344,6 +344,40 @@ footer{background:var(--void);border-top:1px solid rgba(196,151,90,.06);padding:
 .ch-send{background:transparent;border:none;cursor:none;padding:16px 20px;color:rgba(196,151,90,.5);transition:color .2s}
 .ch-send:hover{color:var(--bronze)}
 
+/* ─── GRAIN OVERLAY (Perception Engineering) ── */
+body::after{content:'';position:fixed;inset:-50%;width:200%;height:200%;background-image:url("data:image/svg+xml,%3Csvg viewBox='0 0 512 512' xmlns='http://www.w3.org/2000/svg'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='.72' numOctaves='4' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='.04'/%3E%3C/svg%3E");animation:grain-drift 8s steps(1) infinite;pointer-events:none;z-index:999995;opacity:.5}
+
+/* ─── CURSOR TRAIL ──────────────── */
+.tr{position:fixed;border-radius:50%;pointer-events:none;z-index:999994;transform:translate(-50%,-50%)}
+
+/* ─── CHAPTER TITLE CARDS ────────── */
+.chapter-title{position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:99980;pointer-events:none;text-align:center;opacity:0}
+.chapter-title span{display:block;font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.4em;text-transform:uppercase;color:rgba(196,151,90,.5)}
+.chapter-title h2{font-family:'Cormorant',serif;font-size:clamp(48px,7vw,96px);font-weight:700;color:var(--parchment);letter-spacing:-.02em;line-height:1}
+
+/* ─── GALLERY DRAG ──────────────── */
+.gl-strip{cursor:grab;overflow-x:auto;overflow-y:hidden;scroll-snap-type:x mandatory;-webkit-overflow-scrolling:touch;scrollbar-width:none}
+.gl-strip::-webkit-scrollbar{display:none}
+.gl-strip:active{cursor:grabbing}
+.gl-frame{scroll-snap-align:start;flex-shrink:0}
+
+/* ─── SERVICE CARD 3D TILT ──────── */
+.sc{transform-style:preserve-3d;transform-origin:center center}
+
+/* ─── HORIZONTAL SCROLL HINT ────── */
+.gl-hint{display:flex;align-items:center;gap:12px;margin-top:24px;margin-bottom:0}
+.gl-hint span{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.25em;text-transform:uppercase;color:rgba(196,151,90,.3)}
+.gl-hint-line{width:40px;height:1px;background:linear-gradient(90deg,rgba(196,151,90,.3),transparent);animation:hint-slide 2s ease-in-out infinite}
+@keyframes hint-slide{0%,100%{transform:scaleX(1);transform-origin:left}50%{transform:scaleX(0);transform-origin:left}}
+
+/* ─── GLASSMORPHISM NAV ──────────── */
+nav.sc{background:rgba(7,6,10,.75)!important;backdrop-filter:blur(32px) saturate(180%);-webkit-backdrop-filter:blur(32px) saturate(180%)}
+nav.sc.ln{background:rgba(247,244,238,.85)!important;backdrop-filter:blur(24px) saturate(150%)}
+
+/* ─── SCROLL VELOCITY LINE ───────── */
+#vel-line{position:fixed;right:32px;top:50%;transform:translateY(-50%);width:1px;height:0;background:linear-gradient(to bottom,transparent,var(--bronze),transparent);pointer-events:none;z-index:9970;opacity:0;transition:opacity .4s}
+#vel-line.show{opacity:1}
+
 /* ─── REVEAL SYSTEM ─────────────── */
 .rv{opacity:0;transform:translateY(28px);transition:opacity 1.1s cubic-bezier(.19,1,.22,1),transform 1.1s cubic-bezier(.19,1,.22,1)}
 .rv.in{opacity:1;transform:none}
@@ -641,6 +675,7 @@ footer{background:var(--void);border-top:1px solid rgba(196,151,90,.06);padding:
     <div class="slbl rv">Selected Works</div>
     <h2 class="gl-title rv" style="transition-delay:.1s">Case Studies<br>in <em>Excellence</em></h2>
   </div>
+  <div class="wrap"><div class="gl-hint rv" style="transition-delay:.2s"><div class="gl-hint-line"></div><span>Drag to explore</span></div></div>
   <div class="gl-strip" id="gl-strip">
     <div class="gl-frame">
       <div class="gl-cover" id="gc1"></div>
@@ -847,19 +882,77 @@ footer{background:var(--void);border-top:1px solid rgba(196,151,90,.06);padding:
   <div class="ch-foot"><input id="ch-in" type="text" placeholder="Ask anything..." onkeydown="ckeydown(event)"><button class="ch-send" onclick="csend()"><svg width="13" height="13" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M5 12h14M12 5l7 7-7 7"/></svg></button></div>
 </div>
 
-<!-- THREE.JS + GSAP -->
+<!-- CHAPTER OVERLAY -->
+<div class="chapter-title" id="ch-overlay">
+  <span id="ch-num">Chapter I</span>
+  <h2 id="ch-name">The Doctrine</h2>
+</div>
+
+<!-- VELOCITY LINE -->
+<div id="vel-line"></div>
+
+<!-- THREE.JS + GSAP + LENIS -->
 <script src="https://cdnjs.cloudflare.com/ajax/libs/three.js/r128/three.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/gsap.min.js"></script>
 <script src="https://cdnjs.cloudflare.com/ajax/libs/gsap/3.12.5/ScrollTrigger.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/@studio-freight/lenis@1.0.42/dist/lenis.min.js"></script>
 
 <script>
 /* ══════════════════════════════════════════════════════
-   CURSOR
+   SYSTEM 1: PERCEPTION — WEB AUDIO SUBTLE CLICK
+══════════════════════════════════════════════════════ */
+let audioCtx = null;
+function initAudio(){ if(!audioCtx) audioCtx = new (window.AudioContext||window.webkitAudioContext)(); }
+function playClick(freq=880, dur=0.04, vol=0.015){
+  if(!audioCtx) return;
+  const osc = audioCtx.createOscillator();
+  const gain = audioCtx.createGain();
+  osc.connect(gain); gain.connect(audioCtx.destination);
+  osc.frequency.value = freq;
+  osc.type = 'sine';
+  gain.gain.setValueAtTime(vol, audioCtx.currentTime);
+  gain.gain.exponentialRampToValueAtTime(0.0001, audioCtx.currentTime + dur);
+  osc.start(); osc.stop(audioCtx.currentTime + dur);
+}
+document.addEventListener('click', ()=>{ initAudio(); playClick(660, 0.06, 0.02); }, {once:false, passive:true});
+document.querySelectorAll && document.addEventListener('DOMContentLoaded',()=>{
+  document.querySelectorAll('.btn,.n-cta,.sc,.fq-q').forEach(el=>{
+    el.addEventListener('mouseenter',()=>playClick(1200,0.025,0.008));
+  });
+});
+
+/* ══════════════════════════════════════════════════════
+   SYSTEM 2: CURSOR — PRECISION ENGINEERING
 ══════════════════════════════════════════════════════ */
 const dot = document.getElementById('c-dot');
 const ring = document.getElementById('c-ring');
 let mx=window.innerWidth/2, my=window.innerHeight/2, rx=mx, ry=my;
 gsap.set([dot,ring],{x:mx,y:my});
+
+/* ── CURSOR TRAIL — 12 diminishing dots ── */
+const TRAIL_N = 12;
+const trailDots = [];
+for(let i=0;i<TRAIL_N;i++){
+  const t = document.createElement('div');
+  const s = Math.max(1.5, 3.5 - i*0.18);
+  const a = Math.max(0.02, 0.28 - i*0.022);
+  t.className='tr';
+  t.style.cssText=`width:${s}px;height:${s}px;background:rgba(196,151,90,${a})`;
+  document.body.appendChild(t);
+  trailDots.push({el:t, x:mx, y:my});
+}
+(function trailLoop(){
+  let px=mx, py=my;
+  trailDots.forEach((t,i)=>{
+    const spd = 0.38 - i*0.024;
+    t.x += (px-t.x)*spd;
+    t.y += (py-t.y)*spd;
+    t.el.style.left = t.x+'px';
+    t.el.style.top  = t.y+'px';
+    px=t.x; py=t.y;
+  });
+  requestAnimationFrame(trailLoop);
+})();
 
 document.addEventListener('mousemove', e=>{
   mx=e.clientX; my=e.clientY;
@@ -1046,17 +1139,172 @@ function dismissLoader(){
 function initPage(){
   gsap.registerPlugin(ScrollTrigger);
 
-  // Reveal canvas
   gsap.to(sacredCanvas, {opacity:1, duration:2.5, ease:'power2.out'});
 
+  initLenis();       // System 3: Physics scroll
   initNav();
   initHero();
   initScrollReveals();
   initCounters();
   initGallery();
+  initGalleryDrag(); // System 4: Drag gallery
+  initCardTilt();    // System 5: 3D card tilt
   initProgress();
   initDarkDetect();
   initSpotsBanner();
+  initVelocityLine(); // System 6: Scroll velocity indicator
+  initChapterCards(); // System 7: Narrative storytelling
+  initSplitText();    // System 8: Split text reveals
+}
+
+/* ══════════════════════════════════════════════════════
+   SYSTEM 3: LENIS — PHYSICS-BASED SMOOTH SCROLL
+══════════════════════════════════════════════════════ */
+let lenis;
+function initLenis(){
+  lenis = new Lenis({
+    duration: 1.6,
+    easing: t => Math.min(1, 1.001 - Math.pow(2, -10*t)),
+    orientation: 'vertical',
+    smoothWheel: true,
+    wheelMultiplier: 0.85,
+    touchMultiplier: 1.8,
+    infinite: false,
+  });
+  lenis.on('scroll', ScrollTrigger.update);
+  function raf(time){ lenis.raf(time); requestAnimationFrame(raf); }
+  requestAnimationFrame(raf);
+  // Pause lenis during scroll-jacks
+  ScrollTrigger.scrollerProxy(document.documentElement, {
+    scrollTop(value){ if(arguments.length){ lenis.scrollTo(value,{immediate:true}); } return lenis.scroll; },
+    getBoundingClientRect(){ return {top:0,left:0,width:window.innerWidth,height:window.innerHeight}; }
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   SYSTEM 4: HORIZONTAL DRAG GALLERY
+══════════════════════════════════════════════════════ */
+function initGalleryDrag(){
+  const strip = document.getElementById('gl-strip');
+  let isDrag=false, startX=0, scrollLeft=0, velX=0, lastX=0;
+  strip.addEventListener('mousedown', e=>{
+    isDrag=true; startX=e.pageX-strip.offsetLeft; scrollLeft=strip.scrollLeft; lastX=e.pageX;
+    strip.style.cursor='grabbing'; strip.style.userSelect='none';
+  });
+  strip.addEventListener('mousemove', e=>{
+    if(!isDrag) return;
+    velX = e.pageX - lastX; lastX = e.pageX;
+    strip.scrollLeft = scrollLeft-(e.pageX-strip.offsetLeft-startX)*1.2;
+  });
+  const endDrag = ()=>{
+    isDrag=false; strip.style.cursor='grab'; strip.style.userSelect='';
+    // Momentum
+    let v=velX*8;
+    (function momentum(){ if(Math.abs(v)<0.5) return; strip.scrollLeft-=v; v*=0.92; requestAnimationFrame(momentum); })();
+  };
+  strip.addEventListener('mouseup', endDrag);
+  strip.addEventListener('mouseleave', endDrag);
+  // Touch
+  strip.addEventListener('touchstart', e=>{ startX=e.touches[0].pageX; scrollLeft=strip.scrollLeft; }, {passive:true});
+  strip.addEventListener('touchmove', e=>{ strip.scrollLeft=scrollLeft-(e.touches[0].pageX-startX); }, {passive:true});
+}
+
+/* ══════════════════════════════════════════════════════
+   SYSTEM 5: 3D CARD TILT — Physics-based perspective
+══════════════════════════════════════════════════════ */
+function initCardTilt(){
+  document.querySelectorAll('.sc').forEach(card=>{
+    card.style.transformStyle='preserve-3d';
+    card.style.perspective='800px';
+    card.addEventListener('mousemove', e=>{
+      const r = card.getBoundingClientRect();
+      const x = ((e.clientX-r.left)/r.width - 0.5)*14;
+      const y = -((e.clientY-r.top)/r.height - 0.5)*10;
+      gsap.to(card,{rotateY:x, rotateX:y, transformPerspective:800, duration:.4, ease:'power2.out'});
+    });
+    card.addEventListener('mouseleave',()=>{
+      gsap.to(card,{rotateY:0, rotateX:0, duration:1.0, ease:'elastic.out(1,.4)'});
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   SYSTEM 6: SCROLL VELOCITY LINE
+══════════════════════════════════════════════════════ */
+function initVelocityLine(){
+  const line = document.getElementById('vel-line');
+  let lastScroll=0, vel=0, raf;
+  window.addEventListener('scroll',()=>{
+    vel = Math.min(120, Math.abs(scrollY-lastScroll)*3);
+    lastScroll=scrollY;
+    clearTimeout(raf);
+    if(vel>2){
+      line.classList.add('show');
+      gsap.to(line,{height:vel+'px',opacity:vel/120,duration:.1,ease:'none'});
+    }
+    raf=setTimeout(()=>{
+      line.classList.remove('show');
+      gsap.to(line,{height:0,opacity:0,duration:.6,ease:'power2.out'});
+    },150);
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   SYSTEM 7: CHAPTER NARRATIVE CARDS — Storytelling
+══════════════════════════════════════════════════════ */
+const CHAPTERS = [
+  {sel:'#manifesto', num:'Chapter I', name:'The Doctrine'},
+  {sel:'#services',  num:'Chapter II', name:'The Arsenal'},
+  {sel:'#numbers',   num:'Chapter III', name:'The Record'},
+  {sel:'#process',   num:'Chapter IV', name:'The Method'},
+  {sel:'#gallery',   num:'Chapter V', name:'The Work'},
+  {sel:'#testimonials', num:'Chapter VI', name:'The Proof'},
+  {sel:'#cta',       num:'Chapter VII', name:'The Calling'},
+];
+function initChapterCards(){
+  const overlay = document.getElementById('ch-overlay');
+  const numEl   = document.getElementById('ch-num');
+  const nameEl  = document.getElementById('ch-name');
+  CHAPTERS.forEach(ch=>{
+    const el=document.querySelector(ch.sel);
+    if(!el) return;
+    ScrollTrigger.create({
+      trigger:el, start:'top 50%',
+      onEnter:()=>{
+        numEl.textContent=ch.num; nameEl.textContent=ch.name;
+        gsap.fromTo(overlay,
+          {opacity:0, scale:.96},
+          {opacity:1, scale:1, duration:.5, ease:'power3.out',
+           onComplete:()=>gsap.to(overlay,{opacity:0,scale:1.04,duration:.8,delay:.4,ease:'power2.in'})}
+        );
+      }
+    });
+  });
+}
+
+/* ══════════════════════════════════════════════════════
+   SYSTEM 8: SPLIT TEXT WORD REVEALS
+══════════════════════════════════════════════════════ */
+function initSplitText(){
+  // Word-by-word reveal for blockquotes and large text
+  document.querySelectorAll('.mf-quote, .ts-title, .sv-title, .pr-title, .gl-title, .fq-title').forEach(el=>{
+    if(el.dataset.split) return;
+    el.dataset.split='1';
+    const html = el.innerHTML;
+    el.innerHTML = html.replace(/(<[^>]+>)|(\S+)/g,(match,tag,word)=>{
+      if(tag) return tag;
+      return `<span class="sw" style="display:inline-block;overflow:hidden;vertical-align:bottom"><span class="swi" style="display:inline-block;transform:translateY(110%)">${word}&nbsp;</span></span>`;
+    });
+    ScrollTrigger.create({
+      trigger:el, start:'top 85%', once:true,
+      onEnter:()=>{
+        gsap.to(el.querySelectorAll('.swi'),{
+          y:'0%', duration:1.1, ease:'power4.out',
+          stagger:{amount:.4}
+        });
+      }
+    });
+  });
 }
 
 /* ── NAV ─────────── */
