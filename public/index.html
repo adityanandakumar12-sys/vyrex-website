@@ -155,7 +155,8 @@ nav.sc.ln .n-links a:hover{color:var(--bronze)}
 .mf-bg-n{position:absolute;font-family:'Cormorant',serif;font-size:clamp(200px,32vw,480px);font-weight:700;color:transparent;-webkit-text-stroke:1px rgba(196,151,90,.03);letter-spacing:-.03em;top:50%;transform:translateY(-50%);left:-.05em;line-height:1;pointer-events:none;user-select:none}
 .mf-grid{display:grid;grid-template-columns:1fr 1fr;gap:100px;align-items:start;position:relative;z-index:1}
 @media(max-width:900px){.mf-grid{grid-template-columns:1fr;gap:60px}}
-.mf-quote{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,4.5vw,64px);font-weight:300;font-style:italic;color:rgba(247,244,238,.85);line-height:1.2;letter-spacing:-.01em}
+.mf-quote{font-family:'Cormorant Garamond',serif;font-size:clamp(30px,4.5vw,64px);font-weight:300;font-style:italic;color:rgba(247,244,238,.85);line-height:1.35;letter-spacing:-.01em;opacity:0;transform:translateY(28px);transition:opacity 1.2s ease, transform 1.2s cubic-bezier(.16,1,.3,1)}
+.mf-quote.in{opacity:1;transform:translateY(0)}
 .mf-quote em{font-style:normal;color:var(--bronze)}
 .mf-attr{font-family:'IBM Plex Mono',monospace;font-size:8px;letter-spacing:.28em;text-transform:uppercase;color:rgba(196,151,90,.25);margin-top:48px;display:flex;align-items:center;gap:16px}
 .mf-attr::before{content:'';width:24px;height:0.5px;background:rgba(196,151,90,.25)}
@@ -497,7 +498,7 @@ nav.sc.ln{background:rgba(247,244,238,.85)!important;backdrop-filter:blur(24px) 
     <div class="mf-grid">
       <div>
         <div class="slbl rv">Doctrine</div>
-        <blockquote class="mf-quote rv" style="transition-delay:.12s">
+        <blockquote class="mf-quote" id="mf-quote">
           "Before markets existed, <em>AEVRIX</em> existed.<br>
           We are not new.<br>
           We are <em>eternal</em>."
@@ -1295,7 +1296,7 @@ function initChapterCards(){
 ══════════════════════════════════════════════════════ */
 function initSplitText(){
   // Word-by-word reveal for blockquotes and large text
-  document.querySelectorAll('.mf-quote, .ts-title, .sv-title, .pr-title, .gl-title, .fq-title').forEach(el=>{
+  document.querySelectorAll('.ts-title, .sv-title, .pr-title, .gl-title, .fq-title').forEach(el=>{
     if(el.dataset.split) return;
     el.dataset.split='1';
     const html = el.innerHTML;
@@ -1371,6 +1372,12 @@ function initScrollReveals(){
       gsap.to('#cta-btns',{opacity:1,duration:1,delay:.95});
       gsap.to('#cta-fine',{opacity:1,duration:1,delay:1.2});
     }
+  });
+
+  /* Manifesto quote — clean block reveal */
+  ScrollTrigger.create({
+    trigger:'#mf-quote', start:'top 80%', once:true,
+    onEnter:()=>{ document.getElementById('mf-quote').classList.add('in'); }
   });
 
   /* Number lines */
