@@ -1265,19 +1265,27 @@ function initChapterCards(){
   const overlay = document.getElementById('ch-overlay');
   const numEl   = document.getElementById('ch-num');
   const nameEl  = document.getElementById('ch-name');
+  let chTimer = null;
+
+  function showChapter(num, name){
+    gsap.killTweensOf(overlay);
+    if(chTimer) clearTimeout(chTimer);
+    numEl.textContent = num;
+    nameEl.textContent = name;
+    gsap.set(overlay, {opacity:0, scale:.96});
+    gsap.to(overlay, {opacity:1, scale:1, duration:.35, ease:'power3.out'});
+    chTimer = setTimeout(()=>{
+      gsap.to(overlay, {opacity:0, scale:1.03, duration:.55, ease:'power2.in'});
+    }, 750);
+  }
+
   CHAPTERS.forEach(ch=>{
     const el=document.querySelector(ch.sel);
     if(!el) return;
     ScrollTrigger.create({
       trigger:el, start:'top 50%',
-      onEnter:()=>{
-        numEl.textContent=ch.num; nameEl.textContent=ch.name;
-        gsap.fromTo(overlay,
-          {opacity:0, scale:.96},
-          {opacity:1, scale:1, duration:.5, ease:'power3.out',
-           onComplete:()=>gsap.to(overlay,{opacity:0,scale:1.04,duration:.8,delay:.4,ease:'power2.in'})}
-        );
-      }
+      onEnter:()=>showChapter(ch.num, ch.name),
+      onEnterBack:()=>showChapter(ch.num, ch.name)
     });
   });
 }
