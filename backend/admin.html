@@ -1,0 +1,530 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AEVRIX — Admin</title>
+<link href="https://fonts.googleapis.com/css2?family=Cormorant+Garamond:wght@400;600&family=DM+Sans:opsz,wght@9..40,300;9..40,400;9..40,500&family=IBM+Plex+Mono:wght@300;400&display=swap" rel="stylesheet">
+<style>
+:root{
+  --void:#030305;--void2:#08060F;--void3:#0D0A1A;--surface:#130F1F;
+  --parchment:#EDE8DF;--stone:#C4BFBA;--muted:#7A7672;
+  --bronze:#C49A3C;--bronze-l:#DDB048;--bronze-d:#7A5F20;
+  --border:rgba(196,154,60,.12);--border-h:rgba(196,154,60,.28);
+  --f-d:'Cormorant Garamond',serif;--f-b:'DM Sans',sans-serif;--f-m:'IBM Plex Mono',monospace;
+  --green:#2A8542;--red:#C0392B;--yellow:#E8A020;--blue:#2980B9;
+}
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:var(--void);color:var(--parchment);font-family:var(--f-b);font-size:14px;font-weight:300;-webkit-font-smoothing:antialiased;min-height:100vh}
+a{color:inherit;text-decoration:none}button{cursor:pointer;font:inherit;color:inherit;border:none;background:none}
+
+/* ─── LOGIN ─────────────────────────────────────────────── */
+#login{
+  position:fixed;inset:0;background:var(--void);
+  display:flex;align-items:center;justify-content:center;z-index:100;
+}
+.login-card{width:100%;max-width:400px;padding:48px;background:var(--void2);border:1px solid var(--border)}
+.login-logo{font-family:var(--f-m);font-size:16px;letter-spacing:.28em;color:var(--parchment);margin-bottom:6px}
+.login-logo em{color:var(--bronze);font-style:normal}
+.login-sub{font-family:var(--f-m);font-size:10px;letter-spacing:.18em;color:var(--muted);margin-bottom:40px}
+.login-card .fg{display:flex;flex-direction:column;gap:8px;margin-bottom:16px}
+.login-card label{font-family:var(--f-m);font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase}
+.login-card input{
+  background:rgba(196,154,60,.04);border:1px solid var(--border);
+  padding:13px 16px;color:var(--parchment);font-family:var(--f-b);font-size:13px;
+  outline:none;transition:border-color .25s;
+}
+.login-card input:focus{border-color:var(--bronze-d)}
+.login-card input::placeholder{color:var(--muted);opacity:.4}
+.btn-login{
+  width:100%;padding:14px;background:var(--bronze);color:var(--void);
+  font-family:var(--f-m);font-size:11px;letter-spacing:.16em;
+  transition:background .2s;margin-top:8px;
+}
+.btn-login:hover{background:var(--bronze-l)}
+#login-err{font-family:var(--f-m);font-size:10px;color:var(--red);margin-top:12px;min-height:14px;letter-spacing:.1em}
+
+/* ─── LAYOUT ────────────────────────────────────────────── */
+#app{display:none;min-height:100vh;flex-direction:column}
+#app.show{display:flex}
+
+.topbar{
+  height:56px;background:var(--void2);border-bottom:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  padding:0 32px;position:sticky;top:0;z-index:50;
+}
+.topbar-logo{font-family:var(--f-m);font-size:13px;letter-spacing:.24em;color:var(--parchment)}
+.topbar-logo em{color:var(--bronze);font-style:normal}
+.topbar-right{display:flex;align-items:center;gap:20px}
+.topbar-tag{font-family:var(--f-m);font-size:9px;letter-spacing:.18em;color:var(--muted)}
+.topbar-time{font-family:var(--f-m);font-size:10px;letter-spacing:.12em;color:var(--bronze)}
+#btn-logout{
+  font-family:var(--f-m);font-size:9px;letter-spacing:.18em;color:var(--muted);
+  padding:8px 16px;border:1px solid var(--border);transition:all .2s;
+}
+#btn-logout:hover{border-color:var(--border-h);color:var(--parchment)}
+
+.main{padding:40px 32px;max-width:1400px;margin:0 auto;width:100%;flex:1}
+
+/* ─── STATS ─────────────────────────────────────────────── */
+.stats-grid{
+  display:grid;grid-template-columns:repeat(5,1fr);gap:2px;
+  background:var(--border);margin-bottom:36px;
+}
+.stat-card{
+  background:var(--void2);padding:28px 24px;position:relative;overflow:hidden;
+  border-top:2px solid transparent;transition:border-color .3s;
+}
+.stat-card:hover{border-top-color:var(--bronze)}
+.stat-lbl{font-family:var(--f-m);font-size:9px;letter-spacing:.18em;color:var(--muted);text-transform:uppercase;margin-bottom:12px}
+.stat-val{font-family:var(--f-d);font-size:36px;font-weight:600;color:var(--parchment);line-height:1;margin-bottom:4px}
+.stat-sub{font-family:var(--f-m);font-size:9px;letter-spacing:.12em;color:var(--muted)}
+.stat-card.highlight .stat-val{color:var(--bronze)}
+
+/* ─── CONTROLS ───────────────────────────────────────────── */
+.controls{display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;gap:16px;flex-wrap:wrap}
+.filter-tabs{display:flex;gap:2px;background:var(--border);padding:2px}
+.ftab{
+  padding:8px 20px;font-family:var(--f-m);font-size:9px;letter-spacing:.16em;
+  color:var(--muted);transition:all .2s;cursor:pointer;
+}
+.ftab.active{background:var(--bronze);color:var(--void)}
+.ftab:not(.active):hover{color:var(--parchment);background:rgba(196,154,60,.06)}
+.ctrl-right{display:flex;gap:8px}
+.btn-sm{
+  padding:8px 20px;border:1px solid var(--border);
+  font-family:var(--f-m);font-size:9px;letter-spacing:.16em;
+  color:var(--muted);transition:all .2s;
+}
+.btn-sm:hover{border-color:var(--border-h);color:var(--parchment)}
+.btn-sm.primary{border-color:var(--bronze);color:var(--bronze)}
+.btn-sm.primary:hover{background:var(--bronze);color:var(--void)}
+.search-wrap{position:relative}
+.search-wrap input{
+  background:rgba(196,154,60,.04);border:1px solid var(--border);
+  padding:8px 16px 8px 36px;color:var(--parchment);font-family:var(--f-b);
+  font-size:12px;outline:none;width:240px;transition:border-color .25s;
+}
+.search-wrap input:focus{border-color:var(--bronze-d)}
+.search-wrap input::placeholder{color:var(--muted);opacity:.4}
+.search-ic{
+  position:absolute;left:12px;top:50%;transform:translateY(-50%);
+  width:14px;height:14px;color:var(--muted);pointer-events:none;
+}
+
+/* ─── TABLE ──────────────────────────────────────────────── */
+.table-wrap{border:1px solid var(--border);background:var(--void2);overflow-x:auto}
+table{width:100%;border-collapse:collapse}
+thead tr{border-bottom:1px solid var(--border)}
+thead th{
+  padding:14px 20px;font-family:var(--f-m);font-size:9px;letter-spacing:.16em;
+  color:var(--muted);text-transform:uppercase;text-align:left;font-weight:400;
+  white-space:nowrap;
+}
+thead th:first-child{width:44px;text-align:center}
+tbody tr{border-bottom:1px solid rgba(196,154,60,.06);transition:background .2s}
+tbody tr:last-child{border-bottom:none}
+tbody tr:hover{background:rgba(196,154,60,.04)}
+tbody tr.expanded{background:rgba(196,154,60,.05)}
+tbody td{padding:16px 20px;vertical-align:middle}
+tbody td:first-child{text-align:center;font-family:var(--f-m);font-size:10px;color:var(--muted)}
+.td-name{font-weight:400;color:var(--parchment)}
+.td-email{font-family:var(--f-m);font-size:11px;color:var(--muted)}
+.td-service{font-family:var(--f-m);font-size:10px;letter-spacing:.1em;color:var(--bronze)}
+.td-budget{font-family:var(--f-m);font-size:10px;color:var(--muted)}
+.td-date{font-family:var(--f-m);font-size:10px;color:var(--muted);white-space:nowrap}
+.badge{
+  display:inline-flex;align-items:center;gap:6px;
+  padding:4px 10px;font-family:var(--f-m);font-size:9px;letter-spacing:.14em;
+}
+.badge::before{content:'';width:5px;height:5px;border-radius:50%;background:currentColor;flex-shrink:0}
+.badge.new{color:var(--bronze);background:rgba(196,154,60,.1)}
+.badge.contacted{color:var(--blue);background:rgba(41,128,185,.12)}
+.badge.qualified{color:var(--yellow);background:rgba(232,160,32,.12)}
+.badge.won{color:var(--green);background:rgba(42,133,66,.12)}
+.badge.lost{color:var(--muted);background:rgba(120,120,120,.1)}
+.td-actions{display:flex;align-items:center;gap:6px}
+.act-btn{
+  padding:5px 12px;border:1px solid var(--border);
+  font-family:var(--f-m);font-size:9px;letter-spacing:.12em;
+  color:var(--muted);transition:all .2s;white-space:nowrap;
+}
+.act-btn:hover{border-color:var(--border-h);color:var(--parchment)}
+.act-btn.del:hover{border-color:var(--red);color:var(--red)}
+.expand-row td{padding:0}
+.expand-content{
+  padding:24px 20px 24px 64px;background:rgba(0,0,0,.3);
+  border-top:1px solid var(--border);display:none;
+}
+.expand-row.show .expand-content{display:grid;grid-template-columns:1fr 280px;gap:32px;align-items:start}
+.expand-msg-lbl{font-family:var(--f-m);font-size:9px;letter-spacing:.16em;color:var(--muted);margin-bottom:8px}
+.expand-msg-text{font-size:13px;font-weight:300;color:var(--stone);line-height:1.7}
+.expand-form{display:flex;flex-direction:column;gap:12px}
+.expand-form select,.expand-form textarea{
+  background:rgba(196,154,60,.04);border:1px solid var(--border);
+  padding:10px 14px;color:var(--parchment);font-family:var(--f-b);
+  font-size:12px;outline:none;transition:border-color .25s;resize:none;
+}
+.expand-form select:focus,.expand-form textarea:focus{border-color:var(--bronze-d)}
+.expand-form select option{background:var(--void2)}
+.expand-form textarea{height:80px}
+.expand-form .save-btn{
+  padding:10px;background:var(--bronze);color:var(--void);
+  font-family:var(--f-m);font-size:10px;letter-spacing:.14em;
+  transition:background .2s;
+}
+.expand-form .save-btn:hover{background:var(--bronze-l)}
+
+/* ─── EMPTY STATE ─────────────────────────────────────────── */
+.empty{padding:80px 24px;text-align:center}
+.empty h3{font-family:var(--f-d);font-size:28px;font-weight:400;color:var(--muted);margin-bottom:8px}
+.empty p{font-size:13px;color:var(--muted);opacity:.6}
+
+/* ─── COUNT / LOADING ─────────────────────────────────────── */
+.table-footer{
+  padding:16px 20px;border-top:1px solid var(--border);
+  display:flex;align-items:center;justify-content:space-between;
+  font-family:var(--f-m);font-size:10px;letter-spacing:.1em;color:var(--muted);
+}
+.loading{
+  display:none;position:fixed;inset:0;background:rgba(3,3,5,.7);
+  z-index:200;align-items:center;justify-content:center;
+}
+.loading.show{display:flex}
+.loading-inner{font-family:var(--f-m);font-size:11px;letter-spacing:.22em;color:var(--bronze)}
+
+@media(max-width:900px){
+  .stats-grid{grid-template-columns:repeat(3,1fr)}
+  .main{padding:24px 16px}
+  .topbar{padding:0 16px}
+}
+@media(max-width:600px){
+  .stats-grid{grid-template-columns:repeat(2,1fr)}
+  .filter-tabs{flex-wrap:wrap}
+  .search-wrap input{width:100%}
+  .controls{flex-direction:column;align-items:stretch}
+}
+</style>
+</head>
+<body>
+
+<!-- LOGIN SCREEN -->
+<div id="login">
+  <div class="login-card">
+    <div class="login-logo">AE<em>✦</em>VRIX</div>
+    <div class="login-sub">ADMIN CONTROL PANEL</div>
+    <form id="login-form">
+      <div class="fg"><label>Username</label><input type="text" id="lu" placeholder="aevrix" autocomplete="username" required></div>
+      <div class="fg"><label>Password</label><input type="password" id="lp" placeholder="••••••••••" autocomplete="current-password" required></div>
+      <button type="submit" class="btn-login">Access System →</button>
+      <div id="login-err"></div>
+    </form>
+  </div>
+</div>
+
+<!-- LOADING OVERLAY -->
+<div class="loading" id="loading"><div class="loading-inner">LOADING...</div></div>
+
+<!-- DASHBOARD -->
+<div id="app">
+  <header class="topbar">
+    <div class="topbar-logo">AE<em>✦</em>VRIX</div>
+    <div class="topbar-right">
+      <span class="topbar-tag">LEAD MANAGEMENT</span>
+      <span class="topbar-time" id="clock"></span>
+      <button id="btn-logout">LOGOUT</button>
+    </div>
+  </header>
+
+  <div class="main">
+
+    <!-- Stats Row -->
+    <div class="stats-grid" id="stats-grid">
+      <div class="stat-card"><p class="stat-lbl">Total Leads</p><div class="stat-val" id="s-total">—</div><p class="stat-sub">All time</p></div>
+      <div class="stat-card"><p class="stat-lbl">New Today</p><div class="stat-val" id="s-today">—</div><p class="stat-sub">Unread</p></div>
+      <div class="stat-card"><p class="stat-lbl">New (Unread)</p><div class="stat-val" id="s-new">—</div><p class="stat-sub">Awaiting response</p></div>
+      <div class="stat-card"><p class="stat-lbl">Qualified</p><div class="stat-val" id="s-qual">—</div><p class="stat-sub">Ready to close</p></div>
+      <div class="stat-card highlight"><p class="stat-lbl">Conversion Rate</p><div class="stat-val" id="s-rate">—</div><p class="stat-sub">Leads to won</p></div>
+    </div>
+
+    <!-- Controls -->
+    <div class="controls">
+      <div class="filter-tabs" id="filter-tabs">
+        <div class="ftab active" data-filter="">ALL</div>
+        <div class="ftab" data-filter="new">NEW</div>
+        <div class="ftab" data-filter="contacted">CONTACTED</div>
+        <div class="ftab" data-filter="qualified">QUALIFIED</div>
+        <div class="ftab" data-filter="won">WON</div>
+        <div class="ftab" data-filter="lost">LOST</div>
+      </div>
+      <div class="ctrl-right">
+        <div class="search-wrap">
+          <svg class="search-ic" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.5"><circle cx="11" cy="11" r="7"/><path d="M21 21l-4.35-4.35"/></svg>
+          <input type="text" id="search" placeholder="Search name, email...">
+        </div>
+        <button class="btn-sm" id="btn-refresh">↻ REFRESH</button>
+        <a href="/api/export" class="btn-sm primary" id="btn-export">↓ EXPORT CSV</a>
+      </div>
+    </div>
+
+    <!-- Table -->
+    <div class="table-wrap">
+      <table>
+        <thead>
+          <tr>
+            <th>#</th>
+            <th>Name</th>
+            <th>Email</th>
+            <th>Service</th>
+            <th>Budget</th>
+            <th>Status</th>
+            <th>Date</th>
+            <th>Actions</th>
+          </tr>
+        </thead>
+        <tbody id="leads-body"></tbody>
+      </table>
+      <div class="table-footer"><span id="lead-count">Loading...</span><span id="last-refresh">—</span></div>
+    </div>
+
+  </div>
+</div>
+
+<script>
+const API = '';
+let authToken = '';
+let allLeads = [];
+let currentFilter = '';
+
+/* ── LOGIN ─────────────────────────────────────────────────── */
+document.getElementById('login-form').addEventListener('submit', async e => {
+  e.preventDefault();
+  const user = document.getElementById('lu').value;
+  const pass = document.getElementById('lp').value;
+  authToken = btoa(`${user}:${pass}`);
+  try {
+    const res = await fetch(`${API}/api/stats`, {
+      headers: { 'Authorization': `Basic ${authToken}` }
+    });
+    if (res.ok) {
+      document.getElementById('login').style.display = 'none';
+      document.getElementById('app').classList.add('show');
+      initDashboard();
+    } else {
+      document.getElementById('login-err').textContent = '× Invalid credentials';
+      authToken = '';
+    }
+  } catch {
+    document.getElementById('login-err').textContent = '× Cannot connect to server';
+    authToken = '';
+  }
+});
+
+/* ── DASHBOARD ──────────────────────────────────────────────── */
+async function initDashboard() {
+  startClock();
+  await Promise.all([loadStats(), loadLeads()]);
+  setInterval(loadStats, 30000);
+  setInterval(loadLeads, 60000);
+}
+
+async function apiFetch(url) {
+  const res = await fetch(`${API}${url}`, {
+    headers: { 'Authorization': `Basic ${authToken}` }
+  });
+  if (!res.ok) throw new Error(`${res.status}`);
+  return res.json();
+}
+
+async function loadStats() {
+  try {
+    const s = await apiFetch('/api/stats');
+    document.getElementById('s-total').textContent = s.total;
+    document.getElementById('s-today').textContent = s.today;
+    document.getElementById('s-new').textContent = s.new;
+    document.getElementById('s-qual').textContent = s.qualified;
+    document.getElementById('s-rate').textContent = s.conversion_rate + '%';
+  } catch(e) {}
+}
+
+async function loadLeads() {
+  showLoading(true);
+  try {
+    allLeads = await apiFetch('/api/leads');
+    renderLeads();
+    document.getElementById('last-refresh').textContent = 'Updated ' + new Date().toLocaleTimeString();
+  } catch(e) {
+    document.getElementById('leads-body').innerHTML = '<tr><td colspan="8" style="text-align:center;padding:40px;font-family:var(--f-m);font-size:10px;color:var(--muted);">FAILED TO LOAD</td></tr>';
+  }
+  showLoading(false);
+}
+
+function renderLeads() {
+  const q = document.getElementById('search').value.toLowerCase();
+  let leads = allLeads.filter(l => {
+    const matchFilter = !currentFilter || l.status === currentFilter;
+    const matchSearch = !q || l.name.toLowerCase().includes(q) || l.email.toLowerCase().includes(q) || (l.company || '').toLowerCase().includes(q);
+    return matchFilter && matchSearch;
+  });
+
+  const tbody = document.getElementById('leads-body');
+  document.getElementById('lead-count').textContent = `${leads.length} lead${leads.length !== 1 ? 's' : ''}`;
+
+  if (!leads.length) {
+    tbody.innerHTML = `<tr><td colspan="8"><div class="empty"><h3>No leads found</h3><p>Adjust your filters or check back later.</p></div></td></tr>`;
+    return;
+  }
+
+  tbody.innerHTML = leads.map(l => {
+    const date = l.created_at ? l.created_at.split('T')[0] : '—';
+    return `
+    <tr class="lead-row" data-id="${l.id}" onclick="toggleExpand(${l.id})">
+      <td>${l.id}</td>
+      <td><div class="td-name">${esc(l.name)}</div></td>
+      <td><div class="td-email">${esc(l.email)}</div><div style="font-size:11px;color:var(--muted)">${esc(l.company || '')}</div></td>
+      <td><div class="td-service">${esc(l.service || '—')}</div></td>
+      <td><div class="td-budget">${esc(l.budget || '—')}</div></td>
+      <td><span class="badge ${l.status}">${l.status.toUpperCase()}</span></td>
+      <td><div class="td-date">${date}</div></td>
+      <td onclick="event.stopPropagation()" class="td-actions">
+        <button class="act-btn" onclick="quickStatus(${l.id}, 'contacted')">CONTACTED</button>
+        <button class="act-btn del" onclick="deleteLead(${l.id})">✕</button>
+      </td>
+    </tr>
+    <tr class="expand-row" id="exp-${l.id}">
+      <td colspan="8">
+        <div class="expand-content">
+          <div>
+            <div class="expand-msg-lbl">MESSAGE</div>
+            <div class="expand-msg-text">${esc(l.message || 'No message')}</div>
+            ${l.notes ? `<div style="margin-top:16px"><div class="expand-msg-lbl">NOTES</div><div class="expand-msg-text">${esc(l.notes)}</div></div>` : ''}
+          </div>
+          <div class="expand-form">
+            <div>
+              <div class="expand-msg-lbl" style="margin-bottom:8px">UPDATE STATUS</div>
+              <select id="sel-${l.id}">
+                <option value="new"${l.status==='new'?' selected':''}>New</option>
+                <option value="contacted"${l.status==='contacted'?' selected':''}>Contacted</option>
+                <option value="qualified"${l.status==='qualified'?' selected':''}>Qualified</option>
+                <option value="won"${l.status==='won'?' selected':''}>Won</option>
+                <option value="lost"${l.status==='lost'?' selected':''}>Lost</option>
+              </select>
+            </div>
+            <div>
+              <div class="expand-msg-lbl" style="margin-bottom:8px">NOTES</div>
+              <textarea id="notes-${l.id}" placeholder="Add internal notes...">${esc(l.notes || '')}</textarea>
+            </div>
+            <button class="save-btn" onclick="saveLead(${l.id})">SAVE CHANGES</button>
+          </div>
+        </div>
+      </td>
+    </tr>`;
+  }).join('');
+}
+
+function toggleExpand(id) {
+  const row = document.getElementById('exp-' + id);
+  const isOpen = row.classList.contains('show');
+  document.querySelectorAll('.expand-row.show').forEach(r => r.classList.remove('show'));
+  document.querySelectorAll('.lead-row').forEach(r => r.classList.remove('expanded'));
+  if (!isOpen) {
+    row.classList.add('show');
+    row.previousElementSibling.classList.add('expanded');
+  }
+}
+
+async function saveLead(id) {
+  const statusVal = document.getElementById(`sel-${id}`)?.value;
+  const notesVal = document.getElementById(`notes-${id}`)?.value;
+  try {
+    await fetch(`${API}/api/leads/${id}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Basic ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status: statusVal, notes: notesVal })
+    });
+    await loadLeads();
+  } catch(e) { alert('Failed to save changes'); }
+}
+
+async function quickStatus(id, status) {
+  try {
+    await fetch(`${API}/api/leads/${id}`, {
+      method: 'PUT',
+      headers: { 'Authorization': `Basic ${authToken}`, 'Content-Type': 'application/json' },
+      body: JSON.stringify({ status })
+    });
+    await loadLeads();
+  } catch(e) {}
+}
+
+async function deleteLead(id) {
+  if (!confirm(`Delete lead #${id}? This cannot be undone.`)) return;
+  try {
+    await fetch(`${API}/api/leads/${id}`, {
+      method: 'DELETE',
+      headers: { 'Authorization': `Basic ${authToken}` }
+    });
+    await loadLeads();
+  } catch(e) { alert('Failed to delete'); }
+}
+
+/* ── FILTER TABS ─────────────────────────────────────────── */
+document.getElementById('filter-tabs').addEventListener('click', e => {
+  const tab = e.target.closest('.ftab');
+  if (!tab) return;
+  document.querySelectorAll('.ftab').forEach(t => t.classList.remove('active'));
+  tab.classList.add('active');
+  currentFilter = tab.dataset.filter;
+  renderLeads();
+});
+
+document.getElementById('search').addEventListener('input', renderLeads);
+document.getElementById('btn-refresh').addEventListener('click', loadLeads);
+document.getElementById('btn-logout').addEventListener('click', () => {
+  authToken = '';
+  document.getElementById('app').classList.remove('show');
+  document.getElementById('login').style.display = 'flex';
+  document.getElementById('lu').value = '';
+  document.getElementById('lp').value = '';
+});
+
+/* Update export href with auth */
+document.getElementById('btn-export').addEventListener('click', e => {
+  e.preventDefault();
+  const a = document.createElement('a');
+  a.href = `${API}/api/export`;
+  /* For CSV export we need to open with auth — use XMLHttpRequest */
+  const xhr = new XMLHttpRequest();
+  xhr.open('GET', `${API}/api/export`);
+  xhr.setRequestHeader('Authorization', `Basic ${authToken}`);
+  xhr.responseType = 'blob';
+  xhr.onload = () => {
+    const url = URL.createObjectURL(xhr.response);
+    const dl = document.createElement('a');
+    dl.href = url;
+    dl.download = `aevrix_leads_${new Date().toISOString().split('T')[0]}.csv`;
+    dl.click();
+    URL.revokeObjectURL(url);
+  };
+  xhr.send();
+});
+
+/* ── UTILS ───────────────────────────────────────────────── */
+function esc(s) {
+  return String(s).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
+}
+function showLoading(v) {
+  document.getElementById('loading').classList.toggle('show', v);
+}
+function startClock() {
+  function tick() {
+    const now = new Date();
+    document.getElementById('clock').textContent =
+      now.toLocaleDateString('en-IN',{day:'2-digit',month:'short',year:'numeric'}) + ' · ' +
+      now.toLocaleTimeString('en-IN',{hour:'2-digit',minute:'2-digit'});
+  }
+  tick(); setInterval(tick, 10000);
+}
+</script>
+</body>
+</html>
